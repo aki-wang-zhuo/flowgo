@@ -109,5 +109,6 @@ func init() {
 	DefaultRegistry.Register(branch.SwitchDef, branch.NewSwitch)
 	DefaultRegistry.Register(exit.Def, exit.New)
 	DefaultRegistry.Register(transform.Def, transform.New)
+	DefaultRegistry.Register(transform.CurrentTimeDef, transform.NewCurrentTime)
 	DefaultRegistry.Register(action.Def, action.New)
 }

@@ -92,6 +92,14 @@ func LocalizeComponentDef(d ComponentDef, locale string) ComponentDef {
 		for i := range fields {
 			fields[i].Description = PickI18n(fields[i].Descriptions, locale, fields[i].Description)
 			fields[i].Hint = PickI18n(fields[i].Hints, locale, fields[i].Hint)
+			if len(fields[i].Options) > 0 {
+				opts := make([]ConfigFieldOption, len(fields[i].Options))
+				copy(opts, fields[i].Options)
+				for j := range opts {
+					opts[j].Label = PickI18n(opts[j].Labels, locale, opts[j].Label)
+				}
+				fields[i].Options = opts
+			}
 		}
 		d.ConfigFields = fields
 	}

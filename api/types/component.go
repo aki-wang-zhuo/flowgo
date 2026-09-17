@@ -20,12 +20,22 @@ type ConfigField struct {
 	Hint string `json:"hint,omitempty"`
 	// Hints 补充说明多语言。
 	Hints map[string]string `json:"hints,omitempty"`
-	// Widget 可选 UI 控件；空则按 Type 推断（text / textarea / code-json / code-js / switch / number）。
+	// Widget 可选 UI 控件；空则按 Type 推断（text / textarea / code-json / code-js / switch / number / select）。
 	Widget string `json:"widget,omitempty"`
 	// Rows 多行输入行数（textarea）。
 	Rows int `json:"rows,omitempty"`
 	// ShowIf 条件显示，格式 "field=value"（如 https=true）；空表示始终显示。
 	ShowIf string `json:"showIf,omitempty"`
+	// Options 下拉选项（widget=select）；Label 为默认文案，Labels 多语言。
+	Options []ConfigFieldOption `json:"options,omitempty"`
+}
+
+// ConfigFieldOption 下拉选项。
+type ConfigFieldOption struct {
+	Value string `json:"value"`
+	Label string `json:"label"`
+	// Labels 多语言显示名；不序列化，本地化后写入 Label。
+	Labels map[string]string `json:"-"`
 }
 
 // 常用 Widget 常量。
@@ -36,6 +46,8 @@ const (
 	WidgetCodeJS   = "code-js"
 	WidgetSwitch   = "switch"
 	WidgetNumber   = "number"
+	// WidgetSelect 单选下拉（配合 Options）。
+	WidgetSelect = "select"
 	// WidgetVarList 全局变量动态列表（[{name,type,value}]）。
 	WidgetVarList = "var-list"
 )

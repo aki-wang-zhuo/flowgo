@@ -191,9 +191,12 @@ func portsFor(d types.ComponentDef) (inPorts, outPorts int) {
 	case "exit":
 		return 1, 0
 	}
-	switch d.Type {
+  switch d.Type {
 	case "jsTransform", "httpClient":
 		// 视觉单出口；Success / Failure 两条出边共用
+		return 1, 1
+	case "currentTime":
+		// 单入单出，无分支标签
 		return 1, 1
 	default:
 		inPorts = 1
