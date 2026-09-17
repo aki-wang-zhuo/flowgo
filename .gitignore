@@ -1,0 +1,27 @@
+# 编译产物与本地二进制
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/bin/
+/dist/
+
+# Go 工作区与依赖缓存（如本地使用）
+/vendor/
+
+# IDE / 系统
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# 环境与密钥
+.env
+.env.*
+*.pem
+*.key
