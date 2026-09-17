@@ -17,7 +17,8 @@ type FlowNode struct {
 	ID            string                 `json:"id"`
 	Type          string                 `json:"type"`
 	Name          string                 `json:"name,omitempty"`
-	// Debug 开启后，调试运行会将该节点的入/出消息写入编辑器控制台。
+	// Debug 开启后，草稿调试运行会将该节点的入/出消息写入编辑器控制台。
+	// 已发布运行（HTTP 入口 / execute API）一律忽略此开关，不采集调试日志。
 	Debug bool `json:"debug,omitempty"`
 	// X / Y 为编辑器画布坐标，引擎执行时忽略。
 	X             float64                `json:"x,omitempty"`

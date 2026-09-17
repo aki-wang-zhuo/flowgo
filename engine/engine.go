@@ -70,10 +70,17 @@ type ExecuteOptions struct {
 	// OnlyStart 为 true 时只执行起始节点一次，不沿出边继续（编辑器「仅运行此节点」）。
 	OnlyStart bool
 	// CacheTrack 编译缓存槽；空则 CacheTrackDefault。调试用 draft，线上用 published。
+	// CacheTrackPublished 时一律忽略节点 Debug 开关，不采集调试日志。
 	CacheTrack string
 }
 
-// ExecuteFromWithLogsOpts 与 ExecuteFromWithLogs 相同，可指定是否只跑起始节点。
+// shouldCollectDebugLogs 是否采集节点调试 / 失败 OUT 日志。
+// 发布运行（CacheTrackPublished）一律关闭，避免 IN/OUT 拷贝拖慢线上性能。
+func shouldCollectDebugLogs(opts ExecuteOptions) bool {
+	return opts.CacheTrack != CacheTrackPublished
+}
+
+// ExecuteFromWithLogsOpts 与 ExecuteFromWithLogs 相同，可指定是否只跑起始节点、缓存轨等。
 func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL, startNode string, msg types.Msg, opts ExecuteOptions) (types.Msg, []types.DebugLog, error) {
 	var logs []types.DebugLog
 	if dsl == nil {
@@ -88,6 +95,7 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 		return msg, logs, err
 	}
 
+	collectLogs := shouldCollectDebugLogs(opts)
 	curID := startNode
 	curMsg := msg
 	for hop := 0; hop < maxHops; hop++ {
@@ -100,7 +108,7 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 		if name == "" {
 			name = def.Type
 		}
-		if def.Debug {
+		if collectLogs && def.Debug {
 			logs = append(logs, types.DebugLog{
 				Ts:       time.Now().UnixMilli(),
 				FlowType: "IN",
@@ -112,33 +120,35 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 		started := time.Now()
 		out, relation, err := node.OnMsg(ctx, curMsg)
 		elapsed := time.Since(started).Milliseconds()
-		if def.Debug {
-			entry := types.DebugLog{
-				Ts:           time.Now().UnixMilli(),
-				FlowType:     "OUT",
-				NodeID:       curID,
-				NodeName:     name,
-				RelationType: relation,
-				DurationMs:   elapsed,
+		if collectLogs {
+			if def.Debug {
+				entry := types.DebugLog{
+					Ts:           time.Now().UnixMilli(),
+					FlowType:     "OUT",
+					NodeID:       curID,
+					NodeName:     name,
+					RelationType: relation,
+					DurationMs:   elapsed,
+				}
+				if err != nil {
+					entry.Err = err.Error()
+					entry.Data = curMsg.Data
+				} else {
+					entry.Data = out.Data
+				}
+				logs = append(logs, entry)
+			} else if err != nil {
+				// 未开调试也记录失败 OUT：Failure 边接住后整体无 error，编辑器需靠 logs 标红
+				logs = append(logs, types.DebugLog{
+					Ts:           time.Now().UnixMilli(),
+					FlowType:     "OUT",
+					NodeID:       curID,
+					NodeName:     name,
+					RelationType: relation,
+					Err:          err.Error(),
+					DurationMs:   elapsed,
+				})
 			}
-			if err != nil {
-				entry.Err = err.Error()
-				entry.Data = curMsg.Data
-			} else {
-				entry.Data = out.Data
-			}
-			logs = append(logs, entry)
-		} else if err != nil {
-			// 未开调试也记录失败 OUT：Failure 边接住后整体无 error，编辑器需靠 logs 标红
-			logs = append(logs, types.DebugLog{
-				Ts:           time.Now().UnixMilli(),
-				FlowType:     "OUT",
-				NodeID:       curID,
-				NodeName:     name,
-				RelationType: relation,
-				Err:          err.Error(),
-				DurationMs:   elapsed,
-			})
 		}
 		// 仅运行起始节点：执行一次后立即返回，不走下游
 		if opts.OnlyStart {
