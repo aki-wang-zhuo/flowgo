@@ -95,6 +95,9 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 		return msg, logs, err
 	}
 
+	// 本流程全局变量注入 context，供模板 / 表达式 / JS 读取
+	ctx = types.WithFlowGlobal(ctx, compiled.global)
+
 	collectLogs := shouldCollectDebugLogs(opts)
 	curID := startNode
 	curMsg := msg

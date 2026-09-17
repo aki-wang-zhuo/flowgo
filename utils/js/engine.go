@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
+	"github.com/flowgo/flowgo/api/types"
 )
 
 // Engine 基于 goja 的 JS 执行引擎（对齐 RuleGo GojaJsEngine 的池化与预编译思路）。
@@ -94,6 +95,10 @@ func (e *Engine) Execute(ctx context.Context, funcName string, args ...interface
 
 	if ctx != nil {
 		_ = vm.Set(CtxKey, ctx)
+		// 仅当引擎注入了流程 global 时覆盖；保留进程级 Properties（单测 / 无 DSL 场景）
+		if types.HasFlowGlobal(ctx) {
+			_ = vm.Set(GlobalKey, types.FlowGlobalFrom(ctx))
+		}
 	}
 
 	if slot.timer != nil {

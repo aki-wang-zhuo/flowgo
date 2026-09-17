@@ -10,17 +10,16 @@ import (
 	"github.com/flowgo/flowgo/api/types"
 )
 
-// ${...} 占位符，如 ${msg}、${msg.user.id}、${metadata.httpMethod}
+// ${...} 占位符，如 ${msg}、${msg.user.id}、${metadata.httpMethod}、${global.x}
 var placeholderRe = regexp.MustCompile(`\$\{([^}]+)\}`)
 
-// Render 用消息内容替换模板中的 ${...}。
-// 支持：
-//   - ${msg}          整段消息数据
-//   - ${msg.a.b}      若 msg 为 JSON，按路径取值
-//   - ${metadata.k}   元数据字段
-//   - ${msgType}      消息类型
-//   - ${dataType}     数据类型
+// Render 用消息内容替换模板中的 ${...}（无流程全局变量）。
 func Render(tpl string, msg types.Msg) (string, error) {
+	return RenderEnv(tpl, msg, nil)
+}
+
+// RenderEnv 同 Render，并可解析 ${global.xx}（及 json 路径 ${global.obj.a}）。
+func RenderEnv(tpl string, msg types.Msg, global map[string]interface{}) (string, error) {
 	if !strings.Contains(tpl, "${") {
 		return tpl, nil
 	}
@@ -30,7 +29,7 @@ func Render(tpl string, msg types.Msg) (string, error) {
 	var firstErr error
 	out := placeholderRe.ReplaceAllStringFunc(tpl, func(m string) string {
 		inner := strings.TrimSpace(m[2 : len(m)-1])
-		v, err := resolve(inner, msg, jsonRoot)
+		v, err := resolve(inner, msg, jsonRoot, global)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			return m
@@ -40,7 +39,7 @@ func Render(tpl string, msg types.Msg) (string, error) {
 	return out, firstErr
 }
 
-func resolve(expr string, msg types.Msg, jsonRoot interface{}) (string, error) {
+func resolve(expr string, msg types.Msg, jsonRoot interface{}, global map[string]interface{}) (string, error) {
 	switch {
 	case expr == "msg":
 		return msg.Data, nil
@@ -60,6 +59,26 @@ func resolve(expr string, msg types.Msg, jsonRoot interface{}) (string, error) {
 			return "", err
 		}
 		return string(b), nil
+	case expr == "global":
+		b, err := json.Marshal(global)
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	case strings.HasPrefix(expr, "global."):
+		path := strings.TrimPrefix(expr, "global.")
+		if global == nil {
+			return "", nil
+		}
+		val, err := dig(global, strings.Split(path, "."))
+		if err != nil {
+			// 缺失字段回空串，避免模板因可选变量失败
+			if strings.Contains(err.Error(), "path not found") {
+				return "", nil
+			}
+			return "", err
+		}
+		return stringify(val), nil
 	case strings.HasPrefix(expr, "msg."):
 		path := strings.TrimPrefix(expr, "msg.")
 		if jsonRoot == nil {
@@ -109,7 +128,6 @@ func stringify(v interface{}) string {
 	case string:
 		return t
 	case float64:
-		// JSON 数字
 		if t == float64(int64(t)) {
 			return strconv.FormatInt(int64(t), 10)
 		}

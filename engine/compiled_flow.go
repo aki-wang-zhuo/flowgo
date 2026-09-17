@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/flowgo/flowgo/api/types"
+	"github.com/flowgo/flowgo/components/globalvars"
 )
 
 // compiledFlow 已 Init 的流程运行时（节点实例 + 出边表），可跨消息复用。
@@ -16,6 +17,8 @@ type compiledFlow struct {
 	defs        map[string]types.FlowNode
 	nodes       map[string]types.Node
 	next        map[string]map[string]string
+	// global 本流程全局变量（来自唯一 globalVars 节点）；执行时写入 context。
+	global map[string]interface{}
 }
 
 // destroy 释放全部节点资源。
@@ -80,6 +83,11 @@ func dslFingerprint(dsl *types.FlowDSL) (string, error) {
 
 // buildCompiledFlow 创建并 Init 全部节点。
 func (e *Engine) buildCompiledFlow(dsl *types.FlowDSL, fingerprint string) (*compiledFlow, error) {
+	global, err := globalvars.FromDSL(dsl)
+	if err != nil {
+		return nil, err
+	}
+
 	defs := make(map[string]types.FlowNode, len(dsl.Nodes))
 	nodes := make(map[string]types.Node, len(dsl.Nodes))
 	for _, def := range dsl.Nodes {
@@ -102,6 +110,14 @@ func (e *Engine) buildCompiledFlow(dsl *types.FlowDSL, fingerprint string) (*com
 
 	next := map[string]map[string]string{}
 	for _, edge := range dsl.Edges {
+		fromDef, okFrom := defs[edge.From]
+		toDef, okTo := defs[edge.To]
+		if okFrom && fromDef.Type == globalvars.Type {
+			return nil, fmt.Errorf("globalVars node %s cannot have outgoing edges", edge.From)
+		}
+		if okTo && toDef.Type == globalvars.Type {
+			return nil, fmt.Errorf("globalVars node %s cannot have incoming edges", edge.To)
+		}
 		rel := edge.Relation
 		if rel == "" {
 			rel = types.RelationSuccess
@@ -112,11 +128,18 @@ func (e *Engine) buildCompiledFlow(dsl *types.FlowDSL, fingerprint string) (*com
 		next[edge.From][rel] = edge.To
 	}
 
+	if dsl.EntryNode != "" {
+		if def, ok := defs[dsl.EntryNode]; ok && def.Type == globalvars.Type {
+			return nil, fmt.Errorf("globalVars node cannot be entryNode")
+		}
+	}
+
 	return &compiledFlow{
 		fingerprint: fingerprint,
 		defs:        defs,
 		nodes:       nodes,
 		next:        next,
+		global:      global,
 	}, nil
 }
 

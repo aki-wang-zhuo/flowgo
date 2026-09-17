@@ -25,6 +25,10 @@ var Categories = []Category{
 		Labels: map[string]string{types.LocaleEnUS: "Endpoint"},
 	},
 	{
+		ID: "common", Label: "通用", Order: 6, Color: "#e8d5b7",
+		Labels: map[string]string{types.LocaleEnUS: "Common"},
+	},
+	{
 		ID: "branch", Label: "分支", Order: 7, Color: "#c5cae9",
 		Labels: map[string]string{types.LocaleEnUS: "Branch"},
 	},
@@ -175,8 +179,12 @@ func toItem(d types.ComponentDef, catColor string) types.ComponentItem {
 }
 
 // portsFor 面板/画布端口数量预览（与模型锚点一致）。
-// 入口分组仅出、出口分组仅入；其余默认左右皆有。
+// 入口分组仅出、出口分组仅入；全局变量等配置节点无端口；其余默认左右皆有。
 func portsFor(d types.ComponentDef) (inPorts, outPorts int) {
+	switch d.Type {
+	case "globalVars":
+		return 0, 0
+	}
 	switch d.Category {
 	case "endpoint":
 		return 0, 1

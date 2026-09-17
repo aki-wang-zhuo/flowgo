@@ -31,11 +31,11 @@ var IfDef = types.ComponentDef{
 		types.LocaleEnUS: "Choose True / False edges based on a boolean expression.",
 	},
 	Usage: `configuration.expression 为 Go expr 布尔表达式。
-可用变量：msg（JSON 已解析对象或文本）、metadata、msgType、dataType。
+可用变量：msg、metadata、msgType、dataType、global（本流程全局变量）。
 示例：
   msg.status == 200
+  global.enabled == true
   metadata["route"] == "a"
-  msg.ok == true
 成立走 True，否则走 False。求值错误时返回 Failure 语义由引擎中止（带 err）。`,
 	ConfigFields: []types.ConfigField{
 		{
@@ -81,8 +81,7 @@ func (n *IfNode) Init(config map[string]interface{}) error {
 
 // OnMsg 求值后走 True 或 False（err 必须为 nil 才能跟边）。
 func (n *IfNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, string, error) {
-	_ = ctx
-	ok, err := exprx.RunBool(n.program, msg)
+	ok, err := exprx.RunBoolEnv(n.program, msg, types.FlowGlobalFrom(ctx))
 	if err != nil {
 		// 表达式错误：中止链路（与 jsTransform 脚本错误一致）
 		return msg, types.RelationFailure, err

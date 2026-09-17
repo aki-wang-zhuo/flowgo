@@ -36,6 +36,8 @@ const (
 	WidgetCodeJS   = "code-js"
 	WidgetSwitch   = "switch"
 	WidgetNumber   = "number"
+	// WidgetVarList 全局变量动态列表（[{name,type,value}]）。
+	WidgetVarList = "var-list"
 )
 
 // NodeActions 画布选中快捷栏能力。

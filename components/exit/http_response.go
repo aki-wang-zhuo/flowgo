@@ -91,7 +91,7 @@ func (n *HttpResponseNode) Init(config map[string]interface{}) error {
 }
 
 // OnMsg 渲染响应体模板、写入状态码元数据并结束链路。
-func (n *HttpResponseNode) OnMsg(_ context.Context, msg types.Msg) (types.Msg, string, error) {
+func (n *HttpResponseNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, string, error) {
 	out := msg
 	if out.Meta == nil {
 		out.Meta = types.Metadata{}
@@ -100,7 +100,7 @@ func (n *HttpResponseNode) OnMsg(_ context.Context, msg types.Msg) (types.Msg, s
 
 	tpl := strings.TrimSpace(n.body)
 	if tpl != "" {
-		rendered, err := templatex.Render(tpl, msg)
+		rendered, err := templatex.RenderEnv(tpl, msg, types.FlowGlobalFrom(ctx))
 		if err != nil {
 			return out, types.RelationSuccess, fmt.Errorf("body template: %w", err)
 		}

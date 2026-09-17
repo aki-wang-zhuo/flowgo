@@ -9,6 +9,7 @@ import (
 	"github.com/flowgo/flowgo/components/branch"
 	"github.com/flowgo/flowgo/components/endpoint"
 	"github.com/flowgo/flowgo/components/exit"
+	"github.com/flowgo/flowgo/components/globalvars"
 	"github.com/flowgo/flowgo/components/transform"
 )
 
@@ -103,6 +104,7 @@ var DefaultRegistry = NewRegistry()
 func init() {
 	DefaultRegistry.Register(endpoint.InjectDef, endpoint.NewInject)
 	DefaultRegistry.Register(endpoint.Def, endpoint.New)
+	DefaultRegistry.Register(globalvars.Def, globalvars.New)
 	DefaultRegistry.Register(branch.IfDef, branch.NewIf)
 	DefaultRegistry.Register(branch.SwitchDef, branch.NewSwitch)
 	DefaultRegistry.Register(exit.Def, exit.New)

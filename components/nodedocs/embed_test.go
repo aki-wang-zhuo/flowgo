@@ -22,7 +22,7 @@ func TestParseDocFileName(t *testing.T) {
 
 func TestBuiltinMap(t *testing.T) {
 	m := BuiltinMap()
-	want := []string{"inject", "httpEndpoint", "if", "switch", "httpResponse", "jsTransform", "httpClient"}
+	want := []string{"inject", "httpEndpoint", "if", "switch", "httpResponse", "jsTransform", "httpClient", "globalVars"}
 	for _, typ := range want {
 		loc := m[typ]
 		if loc == nil {

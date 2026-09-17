@@ -38,7 +38,7 @@ var Def = types.ComponentDef{
 	},
 	Usage: `在 configuration.jsScript 中编写函数体（不要写 function 外壳）。
 可用参数：msg（已解析对象或字符串）、metadata（对象）、msgType、dataType。
-可访问：global（进程级属性）、vars（节点 configuration.vars）、已注册 UDF。
+可访问：global（本流程全局变量节点）、vars（节点 configuration.vars）、已注册 UDF。
 必须 return 一个对象，例如：
   return {'msg':msg,'metadata':metadata,'msgType':msgType,'dataType':dataType};
 默认脚本（或空脚本）走直通，不进入 goja。

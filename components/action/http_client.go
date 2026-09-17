@@ -157,8 +157,9 @@ func (n *HttpClientNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, s
 	if out.Meta == nil {
 		out.Meta = types.Metadata{}
 	}
+	global := types.FlowGlobalFrom(ctx)
 
-	urlStr, err := templatex.Render(n.url, msg)
+	urlStr, err := templatex.RenderEnv(n.url, msg, global)
 	if err != nil {
 		return out, types.RelationFailure, fmt.Errorf("url template: %w", err)
 	}
@@ -168,7 +169,7 @@ func (n *HttpClientNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, s
 	}
 
 	var bodyReader io.Reader
-	bodyText, err := n.resolveRequestBody(msg)
+	bodyText, err := n.resolveRequestBody(ctx, msg)
 	if err != nil {
 		return out, types.RelationFailure, fmt.Errorf("body template: %w", err)
 	}
@@ -181,11 +182,11 @@ func (n *HttpClientNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, s
 		return out, types.RelationFailure, fmt.Errorf("new request: %w", err)
 	}
 	for k, v := range n.headers {
-		rk, err := templatex.Render(k, msg)
+		rk, err := templatex.RenderEnv(k, msg, global)
 		if err != nil {
 			return out, types.RelationFailure, fmt.Errorf("header key template: %w", err)
 		}
-		rv, err := templatex.Render(v, msg)
+		rv, err := templatex.RenderEnv(v, msg, global)
 		if err != nil {
 			return out, types.RelationFailure, fmt.Errorf("header value template: %w", err)
 		}
@@ -242,7 +243,7 @@ func (n *HttpClientNode) Destroy() {
 // resolveRequestBody 决定发出去的 HTTP 体。
 // 对本节点「运行」（metadata.httpClient=true）时直接用消息数据（debugValue），不渲染 body 模板。
 // 真实请求与从 HTTP 入口调试进入时仍走 body 模板。
-func (n *HttpClientNode) resolveRequestBody(msg types.Msg) (string, error) {
+func (n *HttpClientNode) resolveRequestBody(ctx context.Context, msg types.Msg) (string, error) {
 	if n.method == http.MethodGet || n.method == http.MethodHead {
 		return "", nil
 	}
@@ -251,7 +252,7 @@ func (n *HttpClientNode) resolveRequestBody(msg types.Msg) (string, error) {
 	}
 	tpl := strings.TrimSpace(n.body)
 	if tpl != "" {
-		return templatex.Render(tpl, msg)
+		return templatex.RenderEnv(tpl, msg, types.FlowGlobalFrom(ctx))
 	}
 	return msg.Data, nil
 }

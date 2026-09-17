@@ -42,8 +42,8 @@ var SwitchDef = types.ComponentDef{
 	Usage: `configuration 字段：
 - expression: 表达式，结果转为字符串后与 cases.value 比较
 - cases: [{ "value":"create", "name":"创建" }, ...]
-可用变量同 IF：msg、metadata、msgType、dataType。
-示例 expression：msg.action 或 metadata.route
+可用变量同 IF：msg、metadata、msgType、dataType、global。
+示例 expression：msg.action 或 global.env 或 metadata.route
 命中第一条 value 相等的分支，出边 relation 为该 value；均未命中走 Default。`,
 	ConfigFields: []types.ConfigField{
 		{
@@ -130,8 +130,7 @@ func parseCases(raw interface{}) []CaseDef {
 
 // OnMsg 匹配 cases，否则 Default。
 func (n *SwitchNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, string, error) {
-	_ = ctx
-	got, err := exprx.RunToString(n.program, msg)
+	got, err := exprx.RunToStringEnv(n.program, msg, types.FlowGlobalFrom(ctx))
 	if err != nil {
 		return msg, types.RelationFailure, err
 	}
