@@ -114,20 +114,39 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 		if collectLogs && def.Debug {
 			logs = append(logs, types.DebugLog{
 				Ts:       time.Now().UnixMilli(),
-				FlowType: "IN",
+				FlowType: types.DebugFlowIN,
 				NodeID:   curID,
 				NodeName: name,
 				Data:     curMsg.Data,
 			})
 		}
 		started := time.Now()
-		out, relation, err := node.OnMsg(ctx, curMsg)
+		// 节点可追加 REQUEST / RESPONSE 等扩展调试行（仅 Debug 开启时挂槽）
+		var nodeExtras []types.DebugLog
+		runCtx := ctx
+		if collectLogs && def.Debug {
+			runCtx = types.WithDebugSink(ctx, &nodeExtras)
+		}
+		out, relation, err := node.OnMsg(runCtx, curMsg)
 		elapsed := time.Since(started).Milliseconds()
+		if collectLogs && def.Debug && len(nodeExtras) > 0 {
+			now := time.Now().UnixMilli()
+			for i := range nodeExtras {
+				if nodeExtras[i].Ts == 0 {
+					nodeExtras[i].Ts = now
+				}
+				nodeExtras[i].NodeID = curID
+				if nodeExtras[i].NodeName == "" {
+					nodeExtras[i].NodeName = name
+				}
+			}
+			logs = append(logs, nodeExtras...)
+		}
 		if collectLogs {
 			if def.Debug {
 				entry := types.DebugLog{
 					Ts:           time.Now().UnixMilli(),
-					FlowType:     "OUT",
+					FlowType:     types.DebugFlowOUT,
 					NodeID:       curID,
 					NodeName:     name,
 					RelationType: relation,
@@ -144,7 +163,7 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 				// 未开调试也记录失败 OUT：Failure 边接住后整体无 error，编辑器需靠 logs 标红
 				logs = append(logs, types.DebugLog{
 					Ts:           time.Now().UnixMilli(),
-					FlowType:     "OUT",
+					FlowType:     types.DebugFlowOUT,
 					NodeID:       curID,
 					NodeName:     name,
 					RelationType: relation,

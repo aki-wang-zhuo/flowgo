@@ -204,6 +204,14 @@ func (n *HttpClientNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, s
 		}
 	}
 
+	// 节点开启 Debug 时：打印实际发出的请求（IN/OUT 之外）
+	if types.HasDebugSink(ctx) {
+		types.AppendDebugLog(ctx, types.DebugLog{
+			FlowType: types.DebugFlowRequest,
+			Data:     formatHTTPRequestDebug(req, bodyText),
+		})
+	}
+
 	client := n.httpClient
 	if client == nil {
 		client = &http.Client{Timeout: n.timeout}
@@ -223,7 +231,16 @@ func (n *HttpClientNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, s
 		return out, types.RelationFailure, fmt.Errorf("response body exceeds %d bytes", maxBodyBytes)
 	}
 
-	out.Data = string(raw)
+	rawText := string(raw)
+	// 节点开启 Debug 时：打印原始响应
+	if types.HasDebugSink(ctx) {
+		types.AppendDebugLog(ctx, types.DebugLog{
+			FlowType: types.DebugFlowResponse,
+			Data:     formatHTTPResponseDebug(resp, rawText),
+		})
+	}
+
+	out.Data = rawText
 	if looksJSON(out.Data) {
 		out.DataType = types.JSON
 	} else {
