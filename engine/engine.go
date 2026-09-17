@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/flowgo/flowgo/api/types"
@@ -11,18 +12,27 @@ import (
 const maxHops = 256
 
 // Engine 最小流程引擎：按 DSL 拓扑串行推进消息。
+// 已 Init 的节点按 flowID + DSL 指纹缓存复用，避免每条消息重新编译 goja。
 type Engine struct {
 	registry *Registry
+	mu       sync.RWMutex
+	cache    map[string]*compiledFlow
 }
 
 // New 使用默认注册表创建引擎。
 func New() *Engine {
-	return &Engine{registry: DefaultRegistry}
+	return &Engine{
+		registry: DefaultRegistry,
+		cache:    map[string]*compiledFlow{},
+	}
 }
 
 // NewWithRegistry 使用自定义注册表。
 func NewWithRegistry(r *Registry) *Engine {
-	return &Engine{registry: r}
+	return &Engine{
+		registry: r,
+		cache:    map[string]*compiledFlow{},
+	}
 }
 
 // Execute 加载流程并从 entryNode 执行一条消息，返回最终消息。
@@ -53,45 +63,19 @@ func (e *Engine) ExecuteFromWithLogs(ctx context.Context, dsl *types.FlowDSL, st
 		return msg, logs, fmt.Errorf("startNode is required")
 	}
 
-	defs := make(map[string]types.FlowNode, len(dsl.Nodes))
-	nodes := make(map[string]types.Node, len(dsl.Nodes))
-	for _, def := range dsl.Nodes {
-		defs[def.ID] = def
-		factoryNode, ok := e.registry.Create(def.Type)
-		if !ok {
-			return msg, logs, fmt.Errorf("unknown node type: %s", def.Type)
-		}
-		if err := factoryNode.Init(def.Configuration); err != nil {
-			return msg, logs, fmt.Errorf("init node %s: %w", def.ID, err)
-		}
-		nodes[def.ID] = factoryNode
-	}
-	defer func() {
-		for _, n := range nodes {
-			n.Destroy()
-		}
-	}()
-
-	next := map[string]map[string]string{}
-	for _, edge := range dsl.Edges {
-		rel := edge.Relation
-		if rel == "" {
-			rel = types.RelationSuccess
-		}
-		if next[edge.From] == nil {
-			next[edge.From] = map[string]string{}
-		}
-		next[edge.From][rel] = edge.To
+	compiled, err := e.getOrCompile(dsl)
+	if err != nil {
+		return msg, logs, err
 	}
 
 	curID := startNode
 	curMsg := msg
 	for hop := 0; hop < maxHops; hop++ {
-		node, ok := nodes[curID]
+		node, ok := compiled.nodes[curID]
 		if !ok {
 			return curMsg, logs, fmt.Errorf("node not found: %s", curID)
 		}
-		def := defs[curID]
+		def := compiled.defs[curID]
 		name := def.Name
 		if name == "" {
 			name = def.Type
@@ -126,8 +110,7 @@ func (e *Engine) ExecuteFromWithLogs(ctx context.Context, dsl *types.FlowDSL, st
 			logs = append(logs, entry)
 		}
 		if err != nil {
-			// 脚本等软失败：若声明了 Failure 出边则走失败分支，否则中止并返回错误
-			to, ok := next[curID][relation]
+			to, ok := compiled.next[curID][relation]
 			if ok && relation == types.RelationFailure {
 				curMsg = out
 				curID = to
@@ -136,7 +119,7 @@ func (e *Engine) ExecuteFromWithLogs(ctx context.Context, dsl *types.FlowDSL, st
 			return curMsg, logs, fmt.Errorf("node %s: %w", curID, err)
 		}
 		curMsg = out
-		to, ok := next[curID][relation]
+		to, ok := compiled.next[curID][relation]
 		if !ok {
 			return curMsg, logs, nil
 		}
