@@ -48,9 +48,14 @@ var SwitchDef = types.ComponentDef{
 	ConfigFields: []types.ConfigField{
 		{
 			Name: "expression", Type: "string", Required: true, Default: "msgType",
-			Widget: types.WidgetText,
+			// 走代码编辑器高亮/补全；语法为 Go expr，前端对 switch 表达式禁用格式化。
+			Widget: types.WidgetCodeJS, Rows: 4,
 			Description: "取值表达式",
 			Descriptions: map[string]string{types.LocaleEnUS: "Value expression"},
+			Hint: "取值表达式使用 Go expr（非 JavaScript）。结果转字符串后与 cases.value 比较；未命中走 Default。变量：msg、metadata、msgType、dataType、global。",
+			Hints: map[string]string{
+				types.LocaleEnUS: "Value expression uses Go expr (not JavaScript). Result is string-compared to case values; unmatched goes to Default. Vars: msg, metadata, msgType, dataType, global.",
+			},
 		},
 		{
 			Name: "cases", Type: "array", Required: true, Widget: types.WidgetCodeJSON,

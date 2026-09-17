@@ -40,9 +40,14 @@ var IfDef = types.ComponentDef{
 	ConfigFields: []types.ConfigField{
 		{
 			Name: "expression", Type: "string", Required: true, Default: "true",
-			Widget: types.WidgetTextarea, Rows: 4,
+			// 走代码编辑器高亮/补全；语法为 Go expr，前端对 if 表达式禁用格式化。
+			Widget: types.WidgetCodeJS, Rows: 6,
 			Description: "布尔表达式",
 			Descriptions: map[string]string{types.LocaleEnUS: "Boolean expression"},
+			Hint: "布尔表达式使用 Go expr 语法（非 JavaScript）。变量：msg、metadata、msgType、dataType、global。成立 → True，否则 → False。",
+			Hints: map[string]string{
+				types.LocaleEnUS: "Boolean expression uses Go expr (not JavaScript). Vars: msg, metadata, msgType, dataType, global. True → True branch, else → False.",
+			},
 		},
 	},
 	Actions: types.NodeActions{Edit: true, Delete: true},
