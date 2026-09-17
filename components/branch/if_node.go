@@ -46,7 +46,7 @@ var IfDef = types.ComponentDef{
 			Descriptions: map[string]string{types.LocaleEnUS: "Boolean expression"},
 		},
 	},
-	Actions: types.NodeActions{Edit: true, Delete: true, Run: true, RunOnly: true},
+	Actions: types.NodeActions{Edit: true, Delete: true},
 }
 
 // IfNode IF 分支节点。

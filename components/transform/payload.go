@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/flowgo/flowgo/api/types"
 )
@@ -133,4 +134,21 @@ func toStringMap(in map[string]interface{}) types.Metadata {
 		out[k] = fmt.Sprint(v)
 	}
 	return out
+}
+
+// ParseDebugValue 读取编辑器对本节点「运行」时注入脚本的 JSON；空则 "{}"。
+// 真实 OnMsg / 上游触发不读取此字段。
+func ParseDebugValue(configuration map[string]interface{}) string {
+	if configuration == nil {
+		return "{}"
+	}
+	v, ok := configuration["debugValue"].(string)
+	if !ok {
+		return "{}"
+	}
+	s := strings.TrimSpace(v)
+	if s == "" {
+		return "{}"
+	}
+	return s
 }

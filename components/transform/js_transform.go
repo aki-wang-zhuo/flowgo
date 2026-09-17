@@ -43,6 +43,7 @@ var Def = types.ComponentDef{
 必须 return 一个对象，例如：
   return {'msg':msg,'metadata':metadata,'msgType':msgType,'dataType':dataType};
 默认脚本（或空脚本）走直通，不进入 goja。
+debugValue：仅编辑器对本节点点「运行」时作为 msg 入参，真实部署 / 上游触发不读。
 右侧视觉上一个出口：首条出边默认 Success，第二条为 Failure。
 脚本/编解码错误走 Failure（有失败边则继续执行，无则中止）。`,
 	ConfigFields: []types.ConfigField{
@@ -52,8 +53,15 @@ var Def = types.ComponentDef{
 			Description: "Transform 函数体",
 			Descriptions: map[string]string{types.LocaleEnUS: "Transform function body"},
 		},
+		{
+			Name: "debugValue", Type: "string", Default: "{\n  \n}", Widget: types.WidgetCodeJSON, Rows: 8,
+			Description: "测试值：节点「运行」时作为脚本 msg",
+			Descriptions: map[string]string{types.LocaleEnUS: "Test JSON used as script msg when Run is clicked"},
+			Hint: "仅调试运行使用，真实流程不读此字段。",
+			Hints: map[string]string{types.LocaleEnUS: "Editor Run only; not used in live flows."},
+		},
 	},
-	Actions: types.NodeActions{Edit: true, Delete: true, Run: true, RunOnly: true},
+	Actions: types.NodeActions{Edit: true, Delete: true, Run: true},
 }
 
 // JsTransformNode 使用 goja 对消息做转换。

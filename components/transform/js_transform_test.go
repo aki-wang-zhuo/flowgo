@@ -63,6 +63,19 @@ return {
 	}
 }
 
+func TestParseDebugValue(t *testing.T) {
+	if ParseDebugValue(nil) != "{}" {
+		t.Fatal("nil")
+	}
+	if ParseDebugValue(map[string]interface{}{}) != "{}" {
+		t.Fatal("empty")
+	}
+	got := ParseDebugValue(map[string]interface{}{"debugValue": " {\"a\":1} "})
+	if got != `{"a":1}` {
+		t.Fatalf("got=%s", got)
+	}
+}
+
 func TestJsTransform_jsonCopyIsolation(t *testing.T) {
 	n := New().(*JsTransformNode)
 	script := `msg.hacked=true; return {msg:msg, metadata:metadata, msgType:msgType, dataType:dataType};`

@@ -60,7 +60,7 @@ var SwitchDef = types.ComponentDef{
 			Descriptions: map[string]string{types.LocaleEnUS: "Cases [{value,name?}]"},
 		},
 	},
-	Actions: types.NodeActions{Edit: true, Delete: true, Run: true, RunOnly: true},
+	Actions: types.NodeActions{Edit: true, Delete: true},
 }
 
 // SwitchNode SWITCH 分支节点。
