@@ -11,6 +11,18 @@ const (
 	BINARY DataType = "BINARY"
 )
 
+// 常用 metadata 键。
+const (
+	// KeyErrorMsg 节点走 Failure 且返回 error 时，引擎写入的详细错误（可能含内部地址/堆栈）。
+	// 仅供调试或内部节点消费；勿直接回写给外部 HTTP 客户端。
+	KeyErrorMsg = "errorMsg"
+	// KeyErrorNode Failure 时写入的失败节点名称（面板显示名，无内部细节）。
+	// 对外响应建议用「${metadata.errorNode}节点失败」一类文案。
+	KeyErrorNode = "errorNode"
+	// KeyErrorNodeID Failure 时写入的失败节点 id，供编辑器标红定位。
+	KeyErrorNodeID = "errorNodeId"
+)
+
 // Metadata 消息元数据（字符串键值）。
 type Metadata map[string]string
 

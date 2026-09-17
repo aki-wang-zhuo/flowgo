@@ -36,6 +36,7 @@ var Def = types.ComponentDef{
 - statusCode: HTTP 状态码，默认 200
 - body: 可选响应体模板；空则直接返回当前消息数据
   可用占位符：${msg}、${msg.a.b}、${metadata.xxx}、${msgType}、${dataType}
+  Failure 分支对外建议：body 用 ${metadata.errorNode}节点失败，勿直接输出 ${metadata.errorMsg}
 写入 metadata.httpStatus；服务端在整链结束后用最终消息写回客户端。`,
 	ConfigFields: []types.ConfigField{
 		{

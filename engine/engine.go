@@ -128,6 +128,17 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 				entry.Data = out.Data
 			}
 			logs = append(logs, entry)
+		} else if err != nil {
+			// 未开调试也记录失败 OUT：Failure 边接住后整体无 error，编辑器需靠 logs 标红
+			logs = append(logs, types.DebugLog{
+				Ts:           time.Now().UnixMilli(),
+				FlowType:     "OUT",
+				NodeID:       curID,
+				NodeName:     name,
+				RelationType: relation,
+				Err:          err.Error(),
+				DurationMs:   elapsed,
+			})
 		}
 		// 仅运行起始节点：执行一次后立即返回，不走下游
 		if opts.OnlyStart {
@@ -139,6 +150,13 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 		if err != nil {
 			to, ok := compiled.next[curID][relation]
 			if ok && relation == types.RelationFailure {
+				// Failure 下游可取 errorNode（安全：仅节点名）与 errorMsg（详细，勿对外暴露）
+				if out.Meta == nil {
+					out.Meta = types.Metadata{}
+				}
+				out.Meta[types.KeyErrorMsg] = err.Error()
+				out.Meta[types.KeyErrorNode] = name
+				out.Meta[types.KeyErrorNodeID] = curID
 				curMsg = out
 				curID = to
 				continue

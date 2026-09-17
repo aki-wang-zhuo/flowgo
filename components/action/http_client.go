@@ -48,7 +48,8 @@ configuration:
 - timeoutSec: 超时秒数，默认 10
 - debugValue: 仅编辑器对本节点点「运行」时作为实际请求体；不渲染 body 模板。真实部署 / HTTP 入口触发不读此字段
 成功时：msg.Data=响应体，metadata.httpStatus=状态码，metadata.httpClientUrl=最终 URL。
-网络错误 / 超时 / 模板错误走 Failure。`,
+网络错误 / 超时 / 模板错误走 Failure；引擎写入 metadata.errorNode（节点名）与 metadata.errorMsg（详细错误，勿对外暴露）。
+对外响应可用「${metadata.errorNode}节点失败」。`,
 	ConfigFields: []types.ConfigField{
 		{
 			Name: "method", Type: "string", Default: "POST", Widget: types.WidgetText,
