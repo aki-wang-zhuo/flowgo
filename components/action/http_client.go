@@ -46,7 +46,7 @@ configuration:
 - headers: 对象，键值均可模板渲染
 - body: 请求体模板；GET 等无体方法可留空；空且非 GET 时可用上游 msg.Data
 - timeoutSec: 超时秒数，默认 10
-- debugValue: 仅编辑器「运行」调试用的上游 JSON，真实部署/HTTP 入口触发时不会使用
+- debugValue: 仅编辑器对本节点点「运行」时作为实际请求体；不渲染 body 模板。真实部署 / HTTP 入口触发不读此字段
 成功时：msg.Data=响应体，metadata.httpStatus=状态码，metadata.httpClientUrl=最终 URL。
 网络错误 / 超时 / 模板错误走 Failure。`,
 	ConfigFields: []types.ConfigField{
@@ -77,8 +77,8 @@ configuration:
 		},
 		{
 			Name: "debugValue", Type: "string", Default: "{\n  \n}", Widget: types.WidgetCodeJSON,
-			Description: "编辑器调试用上游 JSON（部署不用）",
-			Descriptions: map[string]string{types.LocaleEnUS: "Upstream JSON for editor debug runs only"},
+			Description: "节点「运行」时的实际请求体（不走 body 模板）",
+			Descriptions: map[string]string{types.LocaleEnUS: "Actual request body for node Run; body template is skipped"},
 		},
 	},
 	Actions: types.NodeActions{Edit: true, Delete: true, Run: true, RunOnly: true},
@@ -102,7 +102,7 @@ func New() types.Node {
 // Type 实现 types.Node。
 func (n *HttpClientNode) Type() string { return Type }
 
-// Init 解析 configuration（不读取 debugValue，调试体仅编辑器运行时注入消息）。
+// Init 解析 configuration（不读取 debugValue；调试体由 SimulateHttpClient 注入消息后，OnMsg 再按调试标记跳过 body 模板）。
 func (n *HttpClientNode) Init(config map[string]interface{}) error {
 	n.method = http.MethodPost
 	n.url = ""
@@ -168,20 +168,12 @@ func (n *HttpClientNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, s
 	}
 
 	var bodyReader io.Reader
-	bodyText := ""
-	if n.method != http.MethodGet && n.method != http.MethodHead {
-		tpl := strings.TrimSpace(n.body)
-		if tpl != "" {
-			bodyText, err = templatex.Render(tpl, msg)
-			if err != nil {
-				return out, types.RelationFailure, fmt.Errorf("body template: %w", err)
-			}
-		} else if msg.Data != "" {
-			bodyText = msg.Data
-		}
-		if bodyText != "" {
-			bodyReader = strings.NewReader(bodyText)
-		}
+	bodyText, err := n.resolveRequestBody(msg)
+	if err != nil {
+		return out, types.RelationFailure, fmt.Errorf("body template: %w", err)
+	}
+	if bodyText != "" {
+		bodyReader = strings.NewReader(bodyText)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, n.method, urlStr, bodyReader)
@@ -245,6 +237,31 @@ func (n *HttpClientNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, s
 // Destroy 释放客户端（无长连接池需关闭）。
 func (n *HttpClientNode) Destroy() {
 	n.httpClient = nil
+}
+
+// resolveRequestBody 决定发出去的 HTTP 体。
+// 对本节点「运行」（metadata.httpClient=true）时直接用消息数据（debugValue），不渲染 body 模板。
+// 真实请求与从 HTTP 入口调试进入时仍走 body 模板。
+func (n *HttpClientNode) resolveRequestBody(msg types.Msg) (string, error) {
+	if n.method == http.MethodGet || n.method == http.MethodHead {
+		return "", nil
+	}
+	if isHTTPClientDebugRun(msg) {
+		return msg.Data, nil
+	}
+	tpl := strings.TrimSpace(n.body)
+	if tpl != "" {
+		return templatex.Render(tpl, msg)
+	}
+	return msg.Data, nil
+}
+
+// isHTTPClientDebugRun 是否为编辑器对本 HTTP 客户端节点的调试运行。
+func isHTTPClientDebugRun(msg types.Msg) bool {
+	if msg.Meta == nil {
+		return false
+	}
+	return msg.Meta["httpClient"] == "true"
 }
 
 func toPositiveFloat(v interface{}) (float64, error) {
@@ -313,7 +330,8 @@ func looksJSON(s string) bool {
 	return len(s) > 0 && (s[0] == '{' || s[0] == '[')
 }
 
-// ParseDebugValue 读取编辑器调试用上游 JSON；空则 "{}"。真实 OnMsg 不使用此字段。
+// ParseDebugValue 读取编辑器对本节点「运行」时的请求体 JSON；空则 "{}"。
+// 真实 OnMsg / HTTP 入口触发不读取此字段。
 func ParseDebugValue(configuration map[string]interface{}) string {
 	if configuration == nil {
 		return "{}"
