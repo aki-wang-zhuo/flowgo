@@ -79,12 +79,13 @@ func PickI18n(table map[string]string, locale, fallback string) string {
 	return fallback
 }
 
-// LocalizeComponentDef 按语言写入 Label / CategoryLabel / Description / ConfigFields（返回副本）。
+// LocalizeComponentDef 按语言写入 Label / CategoryLabel / Description / Doc / ConfigFields（返回副本）。
 func LocalizeComponentDef(d ComponentDef, locale string) ComponentDef {
 	locale = NormalizeLocale(locale)
 	d.Label = PickI18n(d.Labels, locale, d.Label)
 	d.CategoryLabel = PickI18n(d.CategoryLabels, locale, d.CategoryLabel)
 	d.Description = PickI18n(d.Descriptions, locale, d.Description)
+	d.Doc = PickI18n(d.Docs, locale, d.Doc)
 	if len(d.ConfigFields) > 0 {
 		fields := make([]ConfigField, len(d.ConfigFields))
 		copy(fields, d.ConfigFields)

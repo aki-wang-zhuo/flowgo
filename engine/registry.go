@@ -60,6 +60,17 @@ func (r *Registry) ListDefs() []types.ComponentDef {
 	return out
 }
 
+// GetDef 按类型取元数据副本；未注册返回 false。
+func (r *Registry) GetDef(typeName string) (types.ComponentDef, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	d, ok := r.metas[typeName]
+	if !ok {
+		return types.ComponentDef{}, false
+	}
+	return d, true
+}
+
 // Unregister 移除已注册的节点类型（插件卸载时使用）。
 func (r *Registry) Unregister(typeName string) {
 	r.mu.Lock()

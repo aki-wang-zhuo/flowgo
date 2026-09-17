@@ -67,8 +67,12 @@ type ComponentDef struct {
 	Description    string            `json:"description,omitempty"` // 简短说明
 	// Descriptions 多语言简短说明；不序列化。
 	Descriptions map[string]string `json:"-"`
-	Usage        string            `json:"usage,omitempty"`  // 给 AI / MCP 的用法说明
-	Source       string            `json:"source,omitempty"` // builtin | plugin | marketplace
+	Usage        string            `json:"usage,omitempty"` // 给 AI / MCP 的用法说明（非 Markdown 面板文档）
+	// Doc 编辑器「文档」页 Markdown（与 Usage 分离）；列表接口不下发。
+	Doc string `json:"doc,omitempty"`
+	// Docs 多语言 Markdown 文档；不序列化。
+	Docs   map[string]string `json:"-"`
+	Source string            `json:"source,omitempty"` // builtin | plugin | marketplace
 	ConfigFields []ConfigField     `json:"configFields,omitempty"`
 	// Actions 选中快捷栏能力；零值表示全部关闭，需显式打开。
 	Actions NodeActions `json:"actions,omitempty"`
@@ -100,6 +104,23 @@ type ComponentGroup struct {
 // ComponentsResponse GET /api/components 响应体。
 type ComponentsResponse struct {
 	Groups []ComponentGroup `json:"groups"`
+}
+
+// ComponentDocResponse GET /api/components/{type}/doc —— 单节点编辑器文档。
+type ComponentDocResponse struct {
+	Type string `json:"type"`
+	Doc  string `json:"doc"`
+}
+
+// ComponentDocItem 批量文档列表中的一项。
+type ComponentDocItem struct {
+	Type string `json:"type"`
+	Doc  string `json:"doc"`
+}
+
+// ComponentDocsResponse GET /api/components/docs —— 全部已启用节点的编辑器文档。
+type ComponentDocsResponse struct {
+	Items []ComponentDocItem `json:"items"`
 }
 
 // ComponentManageItem 节点管理列表项。

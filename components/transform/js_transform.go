@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/flowgo/flowgo/api/types"
+	"github.com/flowgo/flowgo/components/nodedocs"
 	"github.com/flowgo/flowgo/utils/js"
 )
 
@@ -17,6 +18,10 @@ const (
 	funcTpl  = "function Transform(msg, metadata, msgType, dataType) { %s }"
 	// DefaultScript 未配置 jsScript 时使用的默认脚本。
 	DefaultScript = "return {'msg':msg,'metadata':metadata,'msgType':msgType,'dataType':dataType};"
+)
+
+var (
+	jsTransformDoc, jsTransformDocs = nodedocs.Pair(nodedocs.JsTransformZH, nodedocs.JsTransformEN)
 )
 
 // Def 编辑器面板元数据（与 Type / New 一同注册到 Registry）。
@@ -46,6 +51,8 @@ var Def = types.ComponentDef{
 debugValue：仅编辑器对本节点点「运行」时作为 msg 入参，真实部署 / 上游触发不读。
 右侧视觉上一个出口：首条出边默认 Success，第二条为 Failure。
 脚本/编解码错误走 Failure（有失败边则继续执行，无则中止）。`,
+	Doc:  jsTransformDoc,
+	Docs: jsTransformDocs,
 	ConfigFields: []types.ConfigField{
 		{
 			Name: "jsScript", Type: "string", Required: true, Default: DefaultScript,

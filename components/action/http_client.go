@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/flowgo/flowgo/api/types"
+	"github.com/flowgo/flowgo/components/nodedocs"
 	"github.com/flowgo/flowgo/utils/templatex"
 )
 
@@ -20,6 +21,10 @@ const (
 	defaultTimeout = 10 * time.Second
 	// maxBodyBytes 响应体读取上限，防止异常大包拖垮内存。
 	maxBodyBytes = 8 << 20 // 8 MiB
+)
+
+var (
+	httpClientDoc, httpClientDocs = nodedocs.Pair(nodedocs.HttpClientZH, nodedocs.HttpClientEN)
 )
 
 // Def 面板元数据：分组「动作」；左右锚点，Success / Failure 出边。
@@ -50,6 +55,8 @@ configuration:
 成功时：msg.Data=响应体，metadata.httpStatus=状态码，metadata.httpClientUrl=最终 URL。
 网络错误 / 超时 / 模板错误走 Failure；引擎写入 metadata.errorNode（节点名）与 metadata.errorMsg（详细错误，勿对外暴露）。
 对外响应可用「${metadata.errorNode}节点失败」。`,
+	Doc:  httpClientDoc,
+	Docs: httpClientDocs,
 	ConfigFields: []types.ConfigField{
 		{
 			Name: "method", Type: "string", Default: "POST", Widget: types.WidgetText,

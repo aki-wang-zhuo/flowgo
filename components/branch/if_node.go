@@ -6,12 +6,17 @@ import (
 
 	"github.com/expr-lang/expr/vm"
 	"github.com/flowgo/flowgo/api/types"
+	"github.com/flowgo/flowgo/components/nodedocs"
 	"github.com/flowgo/flowgo/utils/exprx"
 )
 
 const (
 	// TypeIf IF 分支节点类型。
 	TypeIf = "if"
+)
+
+var (
+	ifDoc, ifDocs = nodedocs.Pair(nodedocs.IfZH, nodedocs.IfEN)
 )
 
 // IfDef 面板元数据：分组「分支」。
@@ -38,6 +43,8 @@ var IfDef = types.ComponentDef{
   metadata["route"] == "a"
   msg.ok == true
 成立走 True，否则走 False。求值错误时返回 Failure 语义由引擎中止（带 err）。`,
+	Doc:  ifDoc,
+	Docs: ifDocs,
 	ConfigFields: []types.ConfigField{
 		{
 			Name: "expression", Type: "string", Required: true, Default: "true",

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/flowgo/flowgo/api/types"
+	"github.com/flowgo/flowgo/components/nodedocs"
 )
 
 const (
@@ -13,6 +14,10 @@ const (
 	TypeInject = "inject"
 	// DefaultInjectPayload 默认注入 JSON。
 	DefaultInjectPayload = "{}"
+)
+
+var (
+	injectDoc, injectDocs = nodedocs.Pair(nodedocs.InjectZH, nodedocs.InjectEN)
 )
 
 // InjectDef 面板元数据：分组「入口」— 注入执行。
@@ -35,6 +40,8 @@ var InjectDef = types.ComponentDef{
 	Usage: `configuration.payload 为要注入的 JSON 文本（对象或数组）。
 本节点无入边、仅右侧出口；默认最多一条 Success 出边。节点浮动栏「运行」会用 payload 作为消息体并进入下一步（出边浮动栏不提供运行）。
 也可作为流程 entryNode：Engine.Execute 时同样会写入 payload。`,
+	Doc:  injectDoc,
+	Docs: injectDocs,
 	ConfigFields: []types.ConfigField{
 		{
 			Name: "payload", Type: "string", Required: true,
