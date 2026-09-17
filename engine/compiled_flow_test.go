@@ -111,6 +111,34 @@ func TestEngine_Invalidate(t *testing.T) {
 	}
 }
 
+func TestEngine_cacheTracksIsolated(t *testing.T) {
+	var inits int32
+	reg := NewRegistry()
+	reg.Register(types.ComponentDef{Type: "countingTest", Label: "c"}, func() types.Node {
+		return &countingNode{inits: &inits}
+	})
+	eng := NewWithRegistry(reg)
+	dsl := &types.FlowDSL{
+		ID:        "flow-tracks",
+		EntryNode: "n1",
+		Nodes:     []types.FlowNode{{ID: "n1", Type: "countingTest", Configuration: map[string]interface{}{"v": 1}}},
+	}
+	msg := types.NewMsg("T", types.JSON, `{}`, nil)
+	if _, _, err := eng.ExecuteFromWithLogsOpts(context.Background(), dsl, "n1", msg, ExecuteOptions{CacheTrack: CacheTrackDraft}); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := eng.ExecuteFromWithLogsOpts(context.Background(), dsl, "n1", msg, ExecuteOptions{CacheTrack: CacheTrackPublished}); err != nil {
+		t.Fatal(err)
+	}
+	if got := atomic.LoadInt32(&inits); got != 2 {
+		t.Fatalf("inits=%d want 2 (one per track)", got)
+	}
+	eng.InvalidateTrack("flow-tracks", CacheTrackDraft)
+	if eng.cacheLen() != 1 {
+		t.Fatalf("cacheLen=%d want 1 after draft invalidate", eng.cacheLen())
+	}
+}
+
 func TestEngine_onlyStart(t *testing.T) {
 	var hops int32
 	reg := NewRegistry()

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/flowgo/flowgo/api/types"
 )
@@ -119,16 +120,29 @@ func (e *Engine) buildCompiledFlow(dsl *types.FlowDSL, fingerprint string) (*com
 	}, nil
 }
 
-// getOrCompile 按 flowID + 指纹复用已 Init 流程；指纹变化时替换并 Destroy 旧实例。
-func (e *Engine) getOrCompile(dsl *types.FlowDSL) (*compiledFlow, error) {
+// DslFingerprint 导出执行相关字段的稳定哈希（忽略画布坐标）。
+func DslFingerprint(dsl *types.FlowDSL) (string, error) {
+	return dslFingerprint(dsl)
+}
+
+// cacheKey 同一流程的草稿 / 已发布分槽缓存。
+func cacheKey(flowID, track, fingerprint string) string {
+	if track == "" {
+		track = CacheTrackDefault
+	}
+	if flowID == "" {
+		return track + ":" + fingerprint
+	}
+	return flowID + ":" + track
+}
+
+// getOrCompile 按 flowID + 缓存轨 + 指纹复用已 Init 流程；指纹变化时替换并 Destroy 旧实例。
+func (e *Engine) getOrCompile(dsl *types.FlowDSL, track string) (*compiledFlow, error) {
 	fp, err := dslFingerprint(dsl)
 	if err != nil {
 		return nil, err
 	}
-	key := dsl.ID
-	if key == "" {
-		key = fp
-	}
+	key := cacheKey(dsl.ID, track, fp)
 
 	e.mu.RLock()
 	cached := e.cache[key]
@@ -159,16 +173,36 @@ func (e *Engine) getOrCompile(dsl *types.FlowDSL) (*compiledFlow, error) {
 	return compiled, nil
 }
 
-// Invalidate 丢弃指定流程的已编译缓存（保存/删除 DSL 后调用）。
+// Invalidate 丢弃指定流程全部缓存轨（删除流程时调用）。
 func (e *Engine) Invalidate(flowID string) {
 	if flowID == "" {
 		return
 	}
+	prefix := flowID + ":"
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	if old := e.cache[flowID]; old != nil {
+	for k, old := range e.cache {
+		if k == flowID || strings.HasPrefix(k, prefix) {
+			old.destroy()
+			delete(e.cache, k)
+		}
+	}
+}
+
+// InvalidateTrack 只丢弃某一缓存轨（保存草稿或发布后调用）。
+func (e *Engine) InvalidateTrack(flowID, track string) {
+	if flowID == "" {
+		return
+	}
+	if track == "" {
+		track = CacheTrackDefault
+	}
+	key := flowID + ":" + track
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if old := e.cache[key]; old != nil {
 		old.destroy()
-		delete(e.cache, flowID)
+		delete(e.cache, key)
 	}
 }
 

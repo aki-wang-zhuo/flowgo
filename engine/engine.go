@@ -58,10 +58,19 @@ func (e *Engine) ExecuteFromWithLogs(ctx context.Context, dsl *types.FlowDSL, st
 	return e.ExecuteFromWithLogsOpts(ctx, dsl, startNode, msg, ExecuteOptions{})
 }
 
+// 编译缓存轨：同一 flowID 的草稿与已发布互不覆盖。
+const (
+	CacheTrackDefault   = "default"
+	CacheTrackDraft     = "draft"
+	CacheTrackPublished = "published"
+)
+
 // ExecuteOptions 控制从某节点执行时的行为。
 type ExecuteOptions struct {
 	// OnlyStart 为 true 时只执行起始节点一次，不沿出边继续（编辑器「仅运行此节点」）。
 	OnlyStart bool
+	// CacheTrack 编译缓存槽；空则 CacheTrackDefault。调试用 draft，线上用 published。
+	CacheTrack string
 }
 
 // ExecuteFromWithLogsOpts 与 ExecuteFromWithLogs 相同，可指定是否只跑起始节点。
@@ -74,7 +83,7 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 		return msg, logs, fmt.Errorf("startNode is required")
 	}
 
-	compiled, err := e.getOrCompile(dsl)
+	compiled, err := e.getOrCompile(dsl, opts.CacheTrack)
 	if err != nil {
 		return msg, logs, err
 	}
