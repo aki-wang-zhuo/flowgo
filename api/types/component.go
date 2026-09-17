@@ -50,6 +50,8 @@ const (
 	WidgetSelect = "select"
 	// WidgetVarList 全局变量动态列表（[{name,type,value}]）。
 	WidgetVarList = "var-list"
+	// WidgetCaseList SWITCH 分支列表（[{value,type,name?}]）。
+	WidgetCaseList = "case-list"
 )
 
 // NodeActions 画布选中快捷栏能力。

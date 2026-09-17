@@ -14,10 +14,12 @@ const (
 	// TypeSwitch SWITCH 分支节点类型。
 	TypeSwitch = "switch"
 )
-// CaseDef 一条匹配分支（出边 relation = Value）。
+// CaseDef 一条匹配分支（出边 relation = Value 的字符串形式）。
 type CaseDef struct {
-	// Value 与表达式结果比较的值，同时作为出边 relation。
+	// Value 与表达式结果（转字符串后）比较的值，同时作为出边 relation。
 	Value string `json:"value"`
+	// Type 编辑器侧值类型：string / number / boolean（可选，仅展示与录入）。
+	Type string `json:"type,omitempty"`
 	// Name 连线展示名（可选）；空则显示 Value。
 	Name string `json:"name,omitempty"`
 }
@@ -41,7 +43,8 @@ var SwitchDef = types.ComponentDef{
 	},
 	Usage: `configuration 字段：
 - expression: 表达式，结果转为字符串后与 cases.value 比较
-- cases: [{ "value":"create", "name":"创建" }, ...]
+- cases: [{ "value":"create", "type":"string", "name":"创建" }, ...]
+  type 为 string / number / boolean（编辑器用）；匹配时统一按字符串比较。
 可用变量同 IF：msg、metadata、msgType、dataType、global。
 示例 expression：msg.action 或 global.env 或 metadata.route
 命中第一条 value 相等的分支，出边 relation 为该 value；均未命中走 Default。`,
@@ -58,10 +61,14 @@ var SwitchDef = types.ComponentDef{
 			},
 		},
 		{
-			Name: "cases", Type: "array", Required: true, Widget: types.WidgetCodeJSON,
-			Default: `[{"value":"a","name":"分支 A"},{"value":"b","name":"分支 B"}]`,
-			Description: "匹配分支 [{value,name?}]",
-			Descriptions: map[string]string{types.LocaleEnUS: "Cases [{value,name?}]"},
+			Name: "cases", Type: "array", Required: true, Widget: types.WidgetCaseList,
+			Default: `[{"value":"a","type":"string","name":"分支 A"},{"value":"b","type":"string","name":"分支 B"}]`,
+			Description: "匹配分支",
+			Descriptions: map[string]string{types.LocaleEnUS: "Match cases"},
+			Hint: "动态添加分支：填写匹配值、数据类型与分支名称；出边 relation 使用值的字符串形式。",
+			Hints: map[string]string{
+				types.LocaleEnUS: "Add cases dynamically: value, data type, and branch name. Edge relation uses the string form of value.",
+			},
 		},
 	},
 	Actions: types.NodeActions{Edit: true, Delete: true},
@@ -128,7 +135,12 @@ func parseCases(raw interface{}) []CaseDef {
 		seen[val] = true
 		name, _ := m["name"].(string)
 		name = strings.TrimSpace(name)
-		out = append(out, CaseDef{Value: val, Name: name})
+		typ, _ := m["type"].(string)
+		typ = strings.ToLower(strings.TrimSpace(typ))
+		if typ != "string" && typ != "number" && typ != "boolean" {
+			typ = ""
+		}
+		out = append(out, CaseDef{Value: val, Type: typ, Name: name})
 	}
 	return out
 }
