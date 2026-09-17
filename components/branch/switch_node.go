@@ -7,7 +7,6 @@ import (
 
 	"github.com/expr-lang/expr/vm"
 	"github.com/flowgo/flowgo/api/types"
-	"github.com/flowgo/flowgo/components/nodedocs"
 	"github.com/flowgo/flowgo/utils/exprx"
 )
 
@@ -15,11 +14,6 @@ const (
 	// TypeSwitch SWITCH 分支节点类型。
 	TypeSwitch = "switch"
 )
-
-var (
-	switchDoc, switchDocs = nodedocs.Pair(nodedocs.SwitchZH, nodedocs.SwitchEN)
-)
-
 // CaseDef 一条匹配分支（出边 relation = Value）。
 type CaseDef struct {
 	// Value 与表达式结果比较的值，同时作为出边 relation。
@@ -51,8 +45,6 @@ var SwitchDef = types.ComponentDef{
 可用变量同 IF：msg、metadata、msgType、dataType。
 示例 expression：msg.action 或 metadata.route
 命中第一条 value 相等的分支，出边 relation 为该 value；均未命中走 Default。`,
-	Doc:  switchDoc,
-	Docs: switchDocs,
 	ConfigFields: []types.ConfigField{
 		{
 			Name: "expression", Type: "string", Required: true, Default: "msgType",

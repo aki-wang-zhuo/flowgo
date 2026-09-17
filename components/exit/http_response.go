@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/flowgo/flowgo/api/types"
-	"github.com/flowgo/flowgo/components/nodedocs"
 	"github.com/flowgo/flowgo/utils/templatex"
 )
 
@@ -15,11 +14,6 @@ const (
 	// Type HTTP 响应节点类型。
 	Type = "httpResponse"
 )
-
-var (
-	httpResponseDoc, httpResponseDocs = nodedocs.Pair(nodedocs.HttpResponseZH, nodedocs.HttpResponseEN)
-)
-
 // Def 面板元数据：分组「出口」。
 var Def = types.ComponentDef{
 	Type:           Type,
@@ -43,8 +37,6 @@ var Def = types.ComponentDef{
   可用占位符：${msg}、${msg.a.b}、${metadata.xxx}、${msgType}、${dataType}
   Failure 分支对外建议：body 用 ${metadata.errorNode}节点失败，勿直接输出 ${metadata.errorMsg}
 写入 metadata.httpStatus；服务端在整链结束后用最终消息写回客户端。`,
-	Doc:  httpResponseDoc,
-	Docs: httpResponseDocs,
 	ConfigFields: []types.ConfigField{
 		{
 			Name: "statusCode", Type: "number", Default: "200", Widget: types.WidgetNumber,

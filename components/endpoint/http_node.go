@@ -4,18 +4,12 @@ import (
 	"context"
 
 	"github.com/flowgo/flowgo/api/types"
-	"github.com/flowgo/flowgo/components/nodedocs"
 )
 
 const (
 	// Type HTTP 入口节点类型。
 	Type = "httpEndpoint"
 )
-
-var (
-	httpEndpointDoc, httpEndpointDocs = nodedocs.Pair(nodedocs.HttpEndpointZH, nodedocs.HttpEndpointEN)
-)
-
 // Def 面板元数据：分组「入口」。
 var Def = types.ComponentDef{
 	Type:           Type,
@@ -41,8 +35,6 @@ var Def = types.ComponentDef{
 - routers: 数组，每项 { "method":"POST", "path":"/api/demo", "name":"可选展示名" }
 本节点无入边，仅右侧出线；连线后选择路径。每个路由对应一条出边，relation 为 "METHOD /path"（如 "POST /api/demo"），连线文案为 name，空则显示 METHOD + path。
 保存后服务端按路径匹配，从对应出边目标节点开始执行。请求体写入 msg，方法/路径/Header 写入 metadata。同一 method 下 path 不可重复。`,
-	Doc:  httpEndpointDoc,
-	Docs: httpEndpointDocs,
 	ConfigFields: []types.ConfigField{
 		{
 			Name: "server", Type: "string", Required: true, Default: ":8088", Widget: types.WidgetText,
