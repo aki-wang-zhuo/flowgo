@@ -111,6 +111,53 @@ func TestEngine_Invalidate(t *testing.T) {
 	}
 }
 
+func TestEngine_onlyStart(t *testing.T) {
+	var hops int32
+	reg := NewRegistry()
+	reg.Register(types.ComponentDef{Type: "countingTest", Label: "c"}, func() types.Node {
+		return &hopCountingNode{hops: &hops}
+	})
+	eng := NewWithRegistry(reg)
+	dsl := &types.FlowDSL{
+		ID:        "flow-only-start",
+		EntryNode: "n1",
+		Nodes: []types.FlowNode{
+			{ID: "n1", Type: "countingTest"},
+			{ID: "n2", Type: "countingTest"},
+		},
+		Edges: []types.FlowEdge{
+			{From: "n1", To: "n2", Relation: types.RelationSuccess},
+		},
+	}
+	msg := types.NewMsg("T", types.JSON, `{}`, nil)
+	if _, _, err := eng.ExecuteFromWithLogsOpts(context.Background(), dsl, "n1", msg, ExecuteOptions{OnlyStart: true}); err != nil {
+		t.Fatal(err)
+	}
+	if got := atomic.LoadInt32(&hops); got != 1 {
+		t.Fatalf("hops=%d want 1", got)
+	}
+	atomic.StoreInt32(&hops, 0)
+	if _, _, err := eng.ExecuteFromWithLogs(context.Background(), dsl, "n1", msg); err != nil {
+		t.Fatal(err)
+	}
+	if got := atomic.LoadInt32(&hops); got != 2 {
+		t.Fatalf("hops=%d want 2", got)
+	}
+}
+
+// hopCountingNode 每次 OnMsg 计数一次。
+type hopCountingNode struct {
+	hops *int32
+}
+
+func (n *hopCountingNode) Type() string                                       { return "countingTest" }
+func (n *hopCountingNode) Init(config map[string]interface{}) error           { return nil }
+func (n *hopCountingNode) Destroy()                                           {}
+func (n *hopCountingNode) OnMsg(ctx context.Context, msg types.Msg) (types.Msg, string, error) {
+	atomic.AddInt32(n.hops, 1)
+	return msg, types.RelationSuccess, nil
+}
+
 func TestDslFingerprint_ignoresLayout(t *testing.T) {
 	a := &types.FlowDSL{
 		ID: "f", EntryNode: "n1",

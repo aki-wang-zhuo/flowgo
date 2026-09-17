@@ -53,8 +53,19 @@ func (e *Engine) ExecuteFrom(ctx context.Context, dsl *types.FlowDSL, startNode 
 	return out, err
 }
 
-// ExecuteFromWithLogs 从指定节点执行，并对 Debug=true 的节点采集 IN/OUT 日志。
+// ExecuteFromWithLogs 从指定节点执行并沿出边继续，对 Debug=true 的节点采集 IN/OUT 日志。
 func (e *Engine) ExecuteFromWithLogs(ctx context.Context, dsl *types.FlowDSL, startNode string, msg types.Msg) (types.Msg, []types.DebugLog, error) {
+	return e.ExecuteFromWithLogsOpts(ctx, dsl, startNode, msg, ExecuteOptions{})
+}
+
+// ExecuteOptions 控制从某节点执行时的行为。
+type ExecuteOptions struct {
+	// OnlyStart 为 true 时只执行起始节点一次，不沿出边继续（编辑器「仅运行此节点」）。
+	OnlyStart bool
+}
+
+// ExecuteFromWithLogsOpts 与 ExecuteFromWithLogs 相同，可指定是否只跑起始节点。
+func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL, startNode string, msg types.Msg, opts ExecuteOptions) (types.Msg, []types.DebugLog, error) {
 	var logs []types.DebugLog
 	if dsl == nil {
 		return msg, logs, fmt.Errorf("flow dsl is nil")
@@ -108,6 +119,13 @@ func (e *Engine) ExecuteFromWithLogs(ctx context.Context, dsl *types.FlowDSL, st
 				entry.Data = out.Data
 			}
 			logs = append(logs, entry)
+		}
+		// 仅运行起始节点：执行一次后立即返回，不走下游
+		if opts.OnlyStart {
+			if err != nil {
+				return out, logs, fmt.Errorf("node %s: %w", curID, err)
+			}
+			return out, logs, nil
 		}
 		if err != nil {
 			to, ok := compiled.next[curID][relation]

@@ -61,7 +61,7 @@ debugValue：仅编辑器对本节点点「运行」时作为 msg 入参，真�
 			Hints: map[string]string{types.LocaleEnUS: "Editor Run only; not used in live flows."},
 		},
 	},
-	Actions: types.NodeActions{Edit: true, Delete: true, Run: true},
+	Actions: types.NodeActions{Edit: true, Delete: true, Run: true, RunOnly: true},
 }
 
 // JsTransformNode 使用 goja 对消息做转换。
