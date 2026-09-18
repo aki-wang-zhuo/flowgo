@@ -14,12 +14,14 @@ type FlowDSL struct {
 
 // FlowNode 流程图中的一个节点。
 type FlowNode struct {
-	ID            string                 `json:"id"`
-	Type          string                 `json:"type"`
-	Name          string                 `json:"name,omitempty"`
+	ID   string `json:"id"`
+	Type string `json:"type"`
+	Name string `json:"name,omitempty"`
 	// Debug 开启后，草稿调试运行会将该节点的入/出消息写入编辑器控制台。
 	// 已发布运行（HTTP 入口 / execute API）一律忽略此开关，不采集调试日志。
 	Debug bool `json:"debug,omitempty"`
+	// ParentID 所属并发分组（或其他容器）节点 id；空表示顶层。
+	ParentID string `json:"parentId,omitempty"`
 	// X / Y 为编辑器画布坐标，引擎执行时忽略。
 	X             float64                `json:"x,omitempty"`
 	Y             float64                `json:"y,omitempty"`

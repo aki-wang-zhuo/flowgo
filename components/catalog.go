@@ -140,6 +140,9 @@ func BuildGroups(defs []types.ComponentDef, locale string) []types.ComponentGrou
 	for _, c := range Categories {
 		items := make([]types.ComponentItem, 0, len(byCat[c.ID]))
 		for _, d := range byCat[c.ID] {
+			if d.HideInPalette {
+				continue
+			}
 			items = append(items, toItem(d, c.Color))
 		}
 		out = append(out, types.ComponentGroup{
@@ -197,6 +200,9 @@ func portsFor(d types.ComponentDef) (inPorts, outPorts int) {
 		return 1, 1
 	case "currentTime":
 		// 单入单出，无分支标签
+		return 1, 1
+	case "concurrentGroup":
+		// 左入；右出视觉单锚点（Success / Failure 标签）；组内另有 fork / 汇合锚点
 		return 1, 1
 	default:
 		inPorts = 1

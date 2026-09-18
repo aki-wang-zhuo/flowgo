@@ -52,6 +52,8 @@ const (
 	WidgetVarList = "var-list"
 	// WidgetCaseList SWITCH 分支列表（[{value,type,name?}]）。
 	WidgetCaseList = "case-list"
+	// WidgetBranchList 并发分组线路列表（[{name}]）。
+	WidgetBranchList = "branch-list"
 )
 
 // NodeActions 画布选中快捷栏能力。
@@ -92,6 +94,8 @@ type ComponentDef struct {
 	ConfigFields []ConfigField     `json:"configFields,omitempty"`
 	// Actions 选中快捷栏能力；零值表示全部关闭，需显式打开。
 	Actions NodeActions `json:"actions,omitempty"`
+	// HideInPalette 为 true 时不出现在节点调色板 / list_components（仍可执行与读文档，用于组内锚点等内部类型）。
+	HideInPalette bool `json:"hideInPalette,omitempty"`
 }
 
 // ComponentItem 面板单项（与前端 PaletteItem 对齐）。

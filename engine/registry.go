@@ -9,6 +9,7 @@ import (
 	"github.com/flowgo/flowgo/components/branch"
 	"github.com/flowgo/flowgo/components/endpoint"
 	"github.com/flowgo/flowgo/components/exit"
+	"github.com/flowgo/flowgo/components/flow"
 	"github.com/flowgo/flowgo/components/globalvars"
 	"github.com/flowgo/flowgo/components/transform"
 )
@@ -107,6 +108,7 @@ func init() {
 	DefaultRegistry.Register(globalvars.Def, globalvars.New)
 	DefaultRegistry.Register(branch.IfDef, branch.NewIf)
 	DefaultRegistry.Register(branch.SwitchDef, branch.NewSwitch)
+	DefaultRegistry.Register(flow.ConcurrentGroupDef, flow.NewConcurrentGroup)
 	DefaultRegistry.Register(exit.Def, exit.New)
 	DefaultRegistry.Register(transform.Def, transform.New)
 	DefaultRegistry.Register(transform.CurrentTimeDef, transform.NewCurrentTime)

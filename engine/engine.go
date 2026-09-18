@@ -99,6 +99,7 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 	ctx = types.WithFlowGlobal(ctx, compiled.global)
 
 	collectLogs := shouldCollectDebugLogs(opts)
+	var logsMu sync.Mutex
 	curID := startNode
 	curMsg := msg
 	for hop := 0; hop < maxHops; hop++ {
@@ -127,6 +128,16 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 		if collectLogs && def.Debug {
 			runCtx = types.WithDebugSink(ctx, &nodeExtras)
 		}
+		// 并发分组需要引擎代跑组内子链（多 goroutine 写 logs 需加锁）
+		runCtx = types.WithBranchRunner(runCtx, &compiledBranchRunner{
+			compiled:    compiled,
+			collectLogs: collectLogs,
+			appendLog: func(l types.DebugLog) {
+				logsMu.Lock()
+				logs = append(logs, l)
+				logsMu.Unlock()
+			},
+		})
 		out, relation, err := node.OnMsg(runCtx, curMsg)
 		elapsed := time.Since(started).Milliseconds()
 		if collectLogs && def.Debug && len(nodeExtras) > 0 {

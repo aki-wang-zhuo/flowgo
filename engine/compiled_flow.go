@@ -105,6 +105,9 @@ func (e *Engine) buildCompiledFlow(dsl *types.FlowDSL, fingerprint string) (*com
 			}
 			return nil, fmt.Errorf("init node %s: %w", def.ID, err)
 		}
+		if setter, ok := factoryNode.(interface{ SetNodeID(string) }); ok {
+			setter.SetNodeID(def.ID)
+		}
 		nodes[def.ID] = factoryNode
 	}
 
@@ -122,10 +125,25 @@ func (e *Engine) buildCompiledFlow(dsl *types.FlowDSL, fingerprint string) (*com
 		if rel == "" {
 			rel = types.RelationSuccess
 		}
+		toID := edge.To
+		// 组内子节点连回 concurrentGroup → 虚拟汇合点；外部进入保持 to=分组 id
+		if okTo && toDef.Type == types.TypeConcurrentGroup {
+			fromParent := ""
+			if okFrom {
+				fromParent = strings.TrimSpace(fromDef.ParentID)
+			}
+			if fromParent == edge.To {
+				if rel == types.RelationFailure {
+					toID = types.VirtualJoinFail(edge.To)
+				} else {
+					toID = types.VirtualJoinOK(edge.To)
+				}
+			}
+		}
 		if next[edge.From] == nil {
 			next[edge.From] = map[string]string{}
 		}
-		next[edge.From][rel] = edge.To
+		next[edge.From][rel] = toID
 	}
 
 	if dsl.EntryNode != "" {
