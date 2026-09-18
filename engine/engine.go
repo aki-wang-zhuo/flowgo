@@ -72,11 +72,16 @@ type ExecuteOptions struct {
 	// CacheTrack 编译缓存槽；空则 CacheTrackDefault。调试用 draft，线上用 published。
 	// CacheTrackPublished 时一律忽略节点 Debug 开关，不采集调试日志。
 	CacheTrack string
+	// SkipDebugLogs 强制不采集调试日志（草稿 MQTT 收未开 Debug 时避免开销）。
+	SkipDebugLogs bool
 }
 
 // shouldCollectDebugLogs 是否采集节点调试 / 失败 OUT 日志。
 // 发布运行（CacheTrackPublished）一律关闭，避免 IN/OUT 拷贝拖慢线上性能。
 func shouldCollectDebugLogs(opts ExecuteOptions) bool {
+	if opts.SkipDebugLogs {
+		return false
+	}
 	return opts.CacheTrack != CacheTrackPublished
 }
 
@@ -97,6 +102,7 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 
 	// 本流程全局变量注入 context，供模板 / 表达式 / JS 读取
 	ctx = types.WithFlowGlobal(ctx, compiled.global)
+	ctx = types.WithFlowExec(ctx, dsl.ID, "")
 
 	collectLogs := shouldCollectDebugLogs(opts)
 	var logsMu sync.Mutex
@@ -124,13 +130,14 @@ func (e *Engine) ExecuteFromWithLogsOpts(ctx context.Context, dsl *types.FlowDSL
 		started := time.Now()
 		// 节点可追加 REQUEST / RESPONSE 等扩展调试行（仅 Debug 开启时挂槽）
 		var nodeExtras []types.DebugLog
-		runCtx := ctx
+		runCtx := types.WithFlowExec(ctx, dsl.ID, curID)
 		if collectLogs && def.Debug {
-			runCtx = types.WithDebugSink(ctx, &nodeExtras)
+			runCtx = types.WithDebugSink(runCtx, &nodeExtras)
 		}
 		// 并发分组需要引擎代跑组内子链（多 goroutine 写 logs 需加锁）
 		runCtx = types.WithBranchRunner(runCtx, &compiledBranchRunner{
 			compiled:    compiled,
+			flowID:      dsl.ID,
 			collectLogs: collectLogs,
 			appendLog: func(l types.DebugLog) {
 				logsMu.Lock()

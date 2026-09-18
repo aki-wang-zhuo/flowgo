@@ -11,6 +11,7 @@ import (
 	"github.com/flowgo/flowgo/components/exit"
 	"github.com/flowgo/flowgo/components/flow"
 	"github.com/flowgo/flowgo/components/globalvars"
+	"github.com/flowgo/flowgo/components/iot"
 	"github.com/flowgo/flowgo/components/transform"
 )
 
@@ -113,4 +114,6 @@ func init() {
 	DefaultRegistry.Register(transform.Def, transform.New)
 	DefaultRegistry.Register(transform.CurrentTimeDef, transform.NewCurrentTime)
 	DefaultRegistry.Register(action.Def, action.New)
+	DefaultRegistry.Register(iot.MqttInDef, iot.NewMqttIn)
+	DefaultRegistry.Register(iot.MqttOutDef, iot.NewMqttOut)
 }

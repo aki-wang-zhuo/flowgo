@@ -49,6 +49,10 @@ var Categories = []Category{
 		Labels: map[string]string{types.LocaleEnUS: "Action"},
 	},
 	{
+		ID: "iot", Label: "物联网", Order: 40, Color: "#80cbc4",
+		Labels: map[string]string{types.LocaleEnUS: "IoT"},
+	},
+	{
 		// 编码未指定分类、或不在标准列表中的节点统一归入此组
 		ID: CategoryOther, Label: "其他", Order: 999, Color: "#d1d5db",
 		Labels: map[string]string{types.LocaleEnUS: "Other"},
@@ -187,6 +191,9 @@ func portsFor(d types.ComponentDef) (inPorts, outPorts int) {
 	switch d.Type {
 	case "globalVars":
 		return 0, 0
+	case "mqttIn":
+		// 物联网入口：无入边，仅 Success 出边
+		return 0, 1
 	}
 	switch d.Category {
 	case "endpoint":
@@ -194,8 +201,8 @@ func portsFor(d types.ComponentDef) (inPorts, outPorts int) {
 	case "exit":
 		return 1, 0
 	}
-  switch d.Type {
-	case "jsTransform", "httpClient":
+	switch d.Type {
+	case "jsTransform", "httpClient", "mqttOut":
 		// 视觉单出口；Success / Failure 两条出边共用
 		return 1, 1
 	case "currentTime":

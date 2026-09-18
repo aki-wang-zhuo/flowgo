@@ -54,6 +54,8 @@ const (
 	WidgetCaseList = "case-list"
 	// WidgetBranchList 并发分组线路列表（[{name}]）。
 	WidgetBranchList = "branch-list"
+	// WidgetMqttInRef 下拉选择画布中的 mqttIn 节点 id（复用其客户端）。
+	WidgetMqttInRef = "mqtt-in-ref"
 )
 
 // NodeActions 画布选中快捷栏能力。
@@ -63,6 +65,7 @@ type NodeActions struct {
 	Delete  bool `json:"delete,omitempty"`
 	Run     bool `json:"run,omitempty"`     // 从此节点运行
 	RunOnly bool `json:"runOnly,omitempty"` // 仅运行此节点
+	Test    bool `json:"test,omitempty"`    // 连接/订阅/发布探测（测完即断开）
 }
 
 // ComponentDef 可拖拽组件的元数据（供编辑器面板展示，与执行工厂同源注册）。

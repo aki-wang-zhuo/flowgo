@@ -11,6 +11,7 @@ import (
 // compiledBranchRunner 在已编译流程上跑单条并发子链，直到汇合点。
 type compiledBranchRunner struct {
 	compiled    *compiledFlow
+	flowID      string
 	collectLogs bool
 	appendLog   func(types.DebugLog)
 }
@@ -87,9 +88,9 @@ func (r *compiledBranchRunner) RunBranch(
 		}
 		started := time.Now()
 		var nodeExtras []types.DebugLog
-		runCtx := ctx
+		runCtx := types.WithFlowExec(ctx, r.flowID, curID)
 		if r.collectLogs && def.Debug {
-			runCtx = types.WithDebugSink(ctx, &nodeExtras)
+			runCtx = types.WithDebugSink(runCtx, &nodeExtras)
 		}
 		result, relation, err := node.OnMsg(runCtx, curMsg)
 		elapsed := time.Since(started).Milliseconds()
